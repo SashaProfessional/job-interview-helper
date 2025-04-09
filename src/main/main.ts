@@ -3,12 +3,13 @@ import { app, BrowserWindow, shell, ipcMain, globalShortcut } from 'electron';
 
 import { IPCChannels } from '../shared/enums/ipcChannels';
 import { resolveHtmlPath } from './util';
-import { setMainWindowForTcp, startTcpClient } from './tcp/client';
 import { startBackendMockServer } from './tcp/backend-mock';
+import TcpClient from './tcp/client';
 
 const useDevTools = false; // Sasha's пиздюк
 
 let mainWindow: BrowserWindow | null = null;
+const tcpClient = new TcpClient();
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -130,6 +131,10 @@ const createWindow = async () => {
     }
   });
 
+  ipcMain.on(IPCChannels.RM_SEND_TCP_MESSAGE, (_event, payload) => {
+    tcpClient.sendMessage(payload);
+  });
+
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
@@ -137,7 +142,7 @@ const createWindow = async () => {
   });
 
   if (mainWindow) {
-    setMainWindowForTcp(mainWindow);
+    tcpClient.setMainWindow(mainWindow);
   }
 };
 
@@ -150,6 +155,7 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  tcpClient.destroy();
 });
 
 app
@@ -158,7 +164,6 @@ app
     createWindow();
 
     setTimeout(() => startBackendMockServer(), 1500);
-    startTcpClient();
 
     app.on('activate', () => {
       if (mainWindow === null) {
