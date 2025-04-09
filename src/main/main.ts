@@ -1,21 +1,15 @@
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, globalShortcut } from 'electron';
+import { app, BrowserWindow, shell, globalShortcut } from 'electron';
 
-import { IPCChannels } from '../shared/enums/ipcChannels';
-import { resolveHtmlPath } from './util';
 import { startBackendMockServer } from './tcp/backend-mock';
 import TcpClient from './tcp/client';
+import registerIpcHandlers from './utils/registerIpcHandlers';
+import { resolveHtmlPath } from './utils/resolveHtmlPath';
 
 const useDevTools = false; // Sasha's пиздюк
 
 let mainWindow: BrowserWindow | null = null;
 const tcpClient = new TcpClient();
-
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
-});
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -71,22 +65,40 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.setIgnoreMouseEvents(useDevTools ? false : true, {
-    forward: true,
-  });
-  mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainWindow.setContentProtection(false);
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  try {
+    mainWindow.setContentProtection(false);
+  } catch (error) {
+    console.error('Failed to set content protection:', error);
+  }
 
-  const isRegistered = globalShortcut.register('CmdOrCtrl+Q', () => {
-    //
-    if (mainWindow) {
-      mainWindow.close();
-    }
-  });
+  try {
+    mainWindow.setIgnoreMouseEvents(useDevTools ? false : true, {
+      forward: true,
+    });
+  } catch (error) {
+    console.error('Failed to set ignore mouse events:', error);
+  }
 
-  if (!isRegistered) {
-    console.log('The shortcut could not be registered.');
+  try {
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  } catch (error) {
+    console.error('Failed to set window always on top:', error);
+  }
+
+  try {
+    mainWindow.loadURL(resolveHtmlPath('index.html'));
+  } catch (error) {
+    console.error('Failed to load URL:', error);
+    app.quit();
+  }
+
+  registerIpcHandlers(mainWindow, tcpClient, useDevTools);
+
+  try {
+    globalShortcut.register('CmdOrCtrl+Q', () => mainWindow?.close()) ??
+      console.log('The shortcut could not be registered.');
+  } catch (error) {
+    console.error('Error registering shortcut:', error);
   }
 
   mainWindow.on('ready-to-show', () => {
@@ -100,44 +112,13 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
-  ipcMain.on(IPCChannels.RM_CLOSE_APP, () => {
-    if (mainWindow) {
-      mainWindow.close();
-    }
-  });
-
-  ipcMain.on(IPCChannels.RM_LOG_TO_MAIN, (_event, ...args) => {
-    console.log('[FRONT LOG]:', ...args);
-  });
-
-  ipcMain.on(
-    IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS,
-    (_event, value: boolean) => {
-      if (!mainWindow || useDevTools) {
-        return;
-      }
-
-      if (value) {
-        mainWindow.setIgnoreMouseEvents(true, { forward: true });
-      } else {
-        mainWindow.setIgnoreMouseEvents(false);
-      }
-    },
-  );
-
-  ipcMain.on(IPCChannels.MM_TCP_TEXT_BLOCK_RECEIVED, (_event, data) => {
-    if (mainWindow) {
-      mainWindow.webContents.send(IPCChannels.MR_TEXT_BLOCK_RECEIVED, data);
-    }
-  });
-
-  ipcMain.on(IPCChannels.RM_SEND_TCP_MESSAGE, (_event, payload) => {
-    tcpClient.sendMessage(payload);
-  });
-
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
-    shell.openExternal(edata.url);
+    try {
+      shell.openExternal(edata.url);
+    } catch (error) {
+      console.error('Failed to open external URL:', error);
+    }
     return { action: 'deny' };
   });
 
@@ -146,14 +127,14 @@ const createWindow = async () => {
   }
 };
 
-app.on('window-all-closed', () => {
+app.once('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-app.on('will-quit', () => {
+app.once('will-quit', () => {
   globalShortcut.unregisterAll();
   tcpClient.destroy();
 });

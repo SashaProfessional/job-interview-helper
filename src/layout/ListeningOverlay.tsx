@@ -29,7 +29,7 @@ const ListeningOverlay = () => {
       },
     );
 
-    sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS);
+    sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS, true);
 
     return () => unsubscribe?.();
   }, []);
