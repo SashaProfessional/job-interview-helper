@@ -1,5 +1,6 @@
 export const TCP_CONFIG = {
-    HOST: '127.0.0.1',
-    PORT: 12345,
-  };
-  
+  HOST: '127.0.0.1',
+  PORT: 12345,
+  MAX_RECONNECT_ATTEMPTS: 10,
+  RECONNECT_DELAY: 2000,
+};

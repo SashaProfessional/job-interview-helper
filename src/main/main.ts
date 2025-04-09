@@ -3,10 +3,7 @@ import { app, BrowserWindow, shell, ipcMain, globalShortcut } from 'electron';
 
 import { IPCChannels } from '../shared/enums/ipcChannels';
 import { resolveHtmlPath } from './util';
-import {
-  setMainWindowForTcp,
-  startTcpClient,
-} from './tcp/client';
+import { setMainWindowForTcp, startTcpClient } from './tcp/client';
 import { startBackendMockServer } from './tcp/backend-mock';
 
 const useDevTools = false; // Sasha's пиздюк
@@ -139,7 +136,9 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  setMainWindowForTcp(mainWindow);
+  if (mainWindow) {
+    setMainWindowForTcp(mainWindow);
+  }
 };
 
 app.on('window-all-closed', () => {
@@ -157,19 +156,13 @@ app
   .whenReady()
   .then(() => {
     createWindow();
-    if (mainWindow) {
-      setMainWindowForTcp(mainWindow);
-    }
 
-    startBackendMockServer();
+    setTimeout(() => startBackendMockServer(), 1500);
     startTcpClient();
 
     app.on('activate', () => {
       if (mainWindow === null) {
         createWindow(); // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
-        if (mainWindow) {
-          setMainWindowForTcp(mainWindow);
-        }
       }
     });
   })
