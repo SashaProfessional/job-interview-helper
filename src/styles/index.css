@@ -1,0 +1,128 @@
+@import './fonts.css';
+#root {
+  height: 100vh;
+}
+
+body {
+  margin: 0;
+}
+
+.interactive {
+  pointer-events: auto !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.page-wrapper {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-wrapper .page {
+  width: 700px;
+  height: 400px;
+  background-color: rgba(191, 191, 191, 0.85);
+  border-radius: 20px;
+  padding: 30px;
+}
+.page-wrapper .page.main-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+.page-wrapper .page.settings-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+.page-wrapper .page.settings-page .footer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+}
+.page-wrapper .page .header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.listening-overlay .block {
+  border-radius: 20px;
+  background-color: rgba(191, 191, 191, 0.6);
+  font-size: 14px;
+  padding: 15px;
+  color: #000;
+}
+.listening-overlay .main-block {
+  position: fixed;
+  top: 30px;
+  left: 30px;
+  width: 400px;
+  height: 400px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 20px;
+}
+.listening-overlay .main-block .header {
+  font-weight: bold;
+}
+.listening-overlay .legend-block {
+  position: fixed;
+  top: 30px;
+  left: 475px;
+}
+.listening-overlay .dev-block {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: rgba(223, 174, 163, 0.6);
+}
+.listening-overlay .dev-block .buttons-group {
+  display: flex;
+  gap: 20px;
+}
+
+.button {
+  background-color: #596173;
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s;
+  border: 3px solid #d7dae0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.07);
+}
+.button:hover {
+  background-color: #434956;
+}
+.button:disabled {
+  background-color: #8c94a6;
+}
+.button.loading {
+  animation: spin 0.83s linear infinite;
+  cursor: default;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}/*# sourceMappingURL=index.css.map */
