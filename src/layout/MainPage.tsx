@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 
+import { sendToIPC } from '../shared/utils/ipc';
 import { ROUTES } from '../shared/enums/routes';
 import { IPCChannels } from '../shared/enums/ipcChannels';
 import Button from '../components/Button';
 import InteractiveArea from '../components/InteractiveArea';
-import { sendIPCMessage } from '../shared/utils/sendIPCMessage';
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const MainPage = () => {
       <InteractiveArea className="page main-page">
         <div className="header">
           <Button onClick={() => navigate(ROUTES.SETTINGS)}>Settings</Button>
-          <Button onClick={() => sendIPCMessage(IPCChannels.CLOSE_APP)}>
+          <Button onClick={() => sendToIPC(IPCChannels.RM_CLOSE_APP)}>
             X
           </Button>
         </div>

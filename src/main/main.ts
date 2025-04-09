@@ -1,28 +1,15 @@
-/**
- * This module executes inside of electron's main process. You can start
- * electron renderer process from here and communicate with the other processes
- * through IPC.
- *
- * When running `npm run build` or `npm run build:main`, this file is compiled to
- * `./src/main.js` using webpack. This gives us some performance wins.
- */
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, globalShortcut } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
 
 import { IPCChannels } from '../shared/enums/ipcChannels';
 import { resolveHtmlPath } from './util';
+import {
+  setMainWindowForTcp,
+  startTcpClient,
+} from './tcp/client';
+import { startBackendMockServer } from './tcp/backend-mock';
 
 const useDevTools = false; // Sasha's пиздюк
-
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -94,6 +81,7 @@ const createWindow = async () => {
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   const isRegistered = globalShortcut.register('CmdOrCtrl+Q', () => {
+    //
     if (mainWindow) {
       mainWindow.close();
     }
@@ -107,37 +95,43 @@ const createWindow = async () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-    }
+    mainWindow.show();
   });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  ipcMain.on(IPCChannels.CLOSE_APP, () => {
+  ipcMain.on(IPCChannels.RM_CLOSE_APP, () => {
     if (mainWindow) {
       mainWindow.close();
     }
   });
 
-  ipcMain.on(IPCChannels.LOG_TO_MAIN, (_event, ...args) => {
+  ipcMain.on(IPCChannels.RM_LOG_TO_MAIN, (_event, ...args) => {
     console.log('[FRONT LOG]:', ...args);
   });
 
   ipcMain.on(
-    IPCChannels.SET_IGNORE_MOUSE_EVENTS,
-    (_event, ignore: boolean, options?: Electron.IgnoreMouseEventsOptions) => {
+    IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS,
+    (_event, value: boolean) => {
       if (!mainWindow || useDevTools) {
         return;
       }
 
-      mainWindow.setIgnoreMouseEvents(ignore, options);
+      if (value) {
+        mainWindow.setIgnoreMouseEvents(true, { forward: true });
+      } else {
+        mainWindow.setIgnoreMouseEvents(false);
+      }
     },
   );
+
+  ipcMain.on(IPCChannels.MM_TCP_TEXT_BLOCK_RECEIVED, (_event, data) => {
+    if (mainWindow) {
+      mainWindow.webContents.send(IPCChannels.MR_TEXT_BLOCK_RECEIVED, data);
+    }
+  });
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
@@ -145,17 +139,11 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  // Remove this if your app does not use auto updates
-  new AppUpdater();
+  setMainWindowForTcp(mainWindow);
 };
 
-/**
- * Add event listeners...
- */
-
 app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
+  // Respect the OSX convention of having the application in memory even after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -169,10 +157,20 @@ app
   .whenReady()
   .then(() => {
     createWindow();
+    if (mainWindow) {
+      setMainWindowForTcp(mainWindow);
+    }
+
+    startBackendMockServer();
+    startTcpClient();
+
     app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) createWindow();
+      if (mainWindow === null) {
+        createWindow(); // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
+        if (mainWindow) {
+          setMainWindowForTcp(mainWindow);
+        }
+      }
     });
   })
   .catch(console.log);

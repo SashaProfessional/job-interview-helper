@@ -23,11 +23,11 @@ const electronHandler = {
     },
     
   },
-  setIgnoreMouseEvents: (ignore: boolean, options?: Electron.IgnoreMouseEventsOptions) => {
-    ipcRenderer.send(IPCChannels.SET_IGNORE_MOUSE_EVENTS, ignore, options);
+  setIgnoreMouseEvents: (value: boolean) => {
+    ipcRenderer.send(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS, value);
   },
   logToMain: (...args: any[]) => {
-    ipcRenderer.send(IPCChannels.LOG_TO_MAIN, ...args);
+    ipcRenderer.send(IPCChannels.RM_LOG_TO_MAIN, ...args);
   },
 };
 

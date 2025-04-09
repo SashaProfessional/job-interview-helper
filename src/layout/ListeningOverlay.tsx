@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { IPCChannels } from '../shared/enums/ipcChannels';
 import { ROUTES } from '../shared/enums/routes';
 import { TextBlock } from '../shared/types/TextBlock';
-import { sendIPCMessage } from '../shared/utils/sendIPCMessage';
+import { sendToIPC, subscribeOnIPC } from '../shared/utils/ipc';
 import SpeechListener from '../components/SpeechListener';
 import InteractiveArea from '../components/InteractiveArea';
 import Button from '../components/Button';
@@ -17,15 +17,28 @@ const ListeningOverlay = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (window.electron) {
-      sendIPCMessage(IPCChannels.SET_IGNORE_MOUSE_EVENTS, true, {
-        forward: true,
-      });
-    }
+    const unsubscribe = subscribeOnIPC(
+      IPCChannels.MR_TEXT_BLOCK_RECEIVED,
+      (textBlock: TextBlock) => {
+        console.log('📩 Renderer received TCP message:', textBlock);
+
+        setTextBlocks((prev) => [
+          { ...textBlock, id: prev.length + 1 }, //temp
+          ...prev,
+        ]);
+      },
+    );
+
+    sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS);
+
+    return () => unsubscribe?.();
   }, []);
 
   const onPushTextBlock = () =>
     setTextBlocks((prev) => [getTextBlockMock(prev.length + 1), ...prev]);
+
+  const onSendTCPMessage = () =>
+    sendToIPC(IPCChannels.RM_SEND_TCP_MESSAGE, 'TCP Message from React Layer');
 
   return (
     <div className="listening-overlay">
@@ -54,6 +67,7 @@ const ListeningOverlay = () => {
       <InteractiveArea className="dev-block block">
         <div className="buttons-group">
           <Button onClick={onPushTextBlock}>Push Text Block</Button>
+          <Button onClick={onSendTCPMessage}>Send TCP Message</Button>
           <Button onClick={() => navigate(ROUTES.MAIN)}>End Session</Button>
         </div>
       </InteractiveArea>

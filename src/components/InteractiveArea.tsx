@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { IPCChannels } from '../shared/enums/ipcChannels';
-import { sendIPCMessage } from '../shared/utils/sendIPCMessage';
+import { sendToIPC } from '../shared/utils/ipc';
 
 interface InteractiveAreaProps {
   className?: string;
@@ -19,12 +19,10 @@ export default function InteractiveArea({
     if (!node) return;
 
     const handleMouseEnter = () =>
-      sendIPCMessage(IPCChannels.SET_IGNORE_MOUSE_EVENTS, false);
+      sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS, false);
 
     const handleMouseLeave = () =>
-      sendIPCMessage(IPCChannels.SET_IGNORE_MOUSE_EVENTS, true, {
-        forward: true,
-      });
+      sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS, true);
 
     node.addEventListener('mouseenter', handleMouseEnter);
     node.addEventListener('mouseleave', handleMouseLeave);

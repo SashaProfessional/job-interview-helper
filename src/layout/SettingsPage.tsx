@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { ROUTES } from '../shared/enums/routes';
 import { IPCChannels } from '../shared/enums/ipcChannels';
-import { sendIPCMessage } from '../shared/utils/sendIPCMessage';
+import { sendToIPC } from '../shared/utils/ipc';
 import Button from '../components/Button';
 import InteractiveArea from '../components/InteractiveArea';
 
@@ -23,7 +23,7 @@ const SettingsPage = () => {
       <InteractiveArea className="page settings-page">
         <div className="header">
           <Button onClick={() => navigate(ROUTES.MAIN)}>Back</Button>
-          <Button onClick={() => sendIPCMessage(IPCChannels.CLOSE_APP)}>
+          <Button onClick={() => sendToIPC(IPCChannels.RM_CLOSE_APP)}>
             X
           </Button>
         </div>
