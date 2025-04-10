@@ -40,6 +40,9 @@ const ListeningOverlay = () => {
   const onSendTCPMessage = () =>
     sendToIPC(IPCChannels.RM_SEND_TCP_MESSAGE, 'TCP Message from React Layer');
 
+  const onSendTCPScreenshot = () =>
+    sendToIPC(IPCChannels.RM_SEND_TCP_SCREENSHOT);
+
   return (
     <div className="listening-overlay">
       <div className="main-block block">
@@ -68,6 +71,7 @@ const ListeningOverlay = () => {
         <div className="buttons-group">
           <Button onClick={onPushTextBlock}>Push Text Block</Button>
           <Button onClick={onSendTCPMessage}>Send TCP Message</Button>
+          <Button onClick={onSendTCPScreenshot}>Send TCP Screenshot</Button>
           <Button onClick={() => navigate(ROUTES.MAIN)}>End Session</Button>
         </div>
       </InteractiveArea>

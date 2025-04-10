@@ -2,8 +2,9 @@ import { BrowserWindow, ipcMain, IpcMainEvent } from 'electron';
 
 import { IPCChannels } from '../../shared/enums/ipcChannels';
 import TcpClient from '../tcp/client';
+import captureFullScreen from './captureFullScreen';
 
-function registerIpcHandlers(
+export default function registerIpcHandlers(
   mainWindow: BrowserWindow,
   tcpClient: TcpClient,
   useDevTools: boolean,
@@ -33,16 +34,13 @@ function registerIpcHandlers(
   );
 
   ipcMain.on(
-    IPCChannels.MM_TCP_TEXT_BLOCK_RECEIVED,
-    (_event: IpcMainEvent, data: any) => {
-      mainWindow.webContents.send(IPCChannels.MR_TEXT_BLOCK_RECEIVED, data);
-    },
-  );
-
-  ipcMain.on(
     IPCChannels.RM_SEND_TCP_MESSAGE,
     (_event: IpcMainEvent, payload: any) => tcpClient.sendMessage(payload),
   );
-}
 
-export default registerIpcHandlers;
+  ipcMain.on(
+    IPCChannels.RM_SEND_TCP_SCREENSHOT,
+    async(_event: IpcMainEvent, payload: any) =>
+      tcpClient.sendMessage(await captureFullScreen(), false),
+  );
+}

@@ -124,7 +124,7 @@ class TcpClient {
     );
   }
 
-  public sendMessage(payload: any) {
+  public sendMessage(payload: any, stringify = true) {
     if (
       this.client &&
       !this.client.destroyed &&
@@ -132,7 +132,7 @@ class TcpClient {
       this.client.writable
     ) {
       console.log('📩 Отправляем данные на TCP сервер:', payload);
-      this.client.write(JSON.stringify(payload) + '\n');
+      this.client.write(stringify ? JSON.stringify(payload) + '\n' : payload);
     } else {
       console.warn('⚠️ TCP клиент не подключен, добавляем сообщение в очередь');
       this.messageQueue.push(payload);
