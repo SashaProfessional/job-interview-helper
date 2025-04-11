@@ -19,38 +19,35 @@ export const startBackendMockServer = () => {
     console.log('📦🟢 Client connected to mock Backend TCP server');
 
     socket.on('data', (data) => {
-      // Накапливаем данные в буфере
       buffer = Buffer.concat([buffer, data]);
 
-      // Обрабатываем пакеты, пока есть достаточно данных
       while (buffer.length >= TCP_CONFIG.HEADER_CHUNK_SIZE) {
-        const headerRaw = buffer.slice(0, TCP_CONFIG.HEADER_CHUNK_SIZE).toString(); // Считываем 64 байта заголовка
+        const headerRaw = buffer
+          .slice(0, TCP_CONFIG.HEADER_CHUNK_SIZE)
+          .toString();
         let headerObj: ChunkHeaderType;
 
-        // Пробуем распарсить заголовок
         try {
-          headerObj = JSON.parse(headerRaw);
-        } catch (e) {
-          console.error('📦❌ Failed to parse header:', e.message, 'Raw header:', headerRaw);
-          // Если заголовок невалидный, сдвигаем буфер и продолжаем
-          // buffer = buffer.slice(1);
+          headerObj = JSON.parse(headerRaw.trim());
+        } catch (e: any) {
+          console.error(
+            `📦❌ Failed to parse header: ${e?.message}, skipping 1 byte`,
+          );
+          buffer = buffer.slice(1); // Сдвигаем буфер, если заголовок невалиден
           continue;
         }
 
-        // Проверяем, что в буфере есть весь пакет (заголовок + тело)
         const packetSize = TCP_CONFIG.HEADER_CHUNK_SIZE + headerObj.length;
         if (buffer.length < packetSize) {
-          break; // Ждём больше данных
+          break;
         }
 
-        // Извлекаем тело чанка и обновляем буфер
+        const { id, index, total } = headerObj;
         const body = buffer.slice(TCP_CONFIG.HEADER_CHUNK_SIZE, packetSize);
         buffer = buffer.slice(packetSize);
 
-        const { id, index, total } = headerObj;
-        console.log(`📦 Received chunk ${index + 1} of ${total} for ${buffer.slice(0, TCP_CONFIG.HEADER_CHUNK_SIZE).toString()}`);
+        console.log(`📦 Received chunk ${index + 1} of ${total} for ID ${id}`);
 
-        // Сохраняем чанк
         if (!fileBuffersMap.has(id)) {
           fileBuffersMap.set(id, {
             chunks: new Array(total),
@@ -63,7 +60,6 @@ export const startBackendMockServer = () => {
         storage.chunks[index] = body;
         storage.received++;
 
-        // Если все чанки получены, сохраняем файл
         if (storage.received === total) {
           const completeBuffer = Buffer.concat(storage.chunks);
           const filePath = path.join(__dirname, `screenshot-${id}.png`);
@@ -88,9 +84,19 @@ export const startBackendMockServer = () => {
     socket.on('end', () => {
       console.log('📦🔴 Client disconnected');
     });
+
+    socket.on('error', (err) => {
+      console.error('📦❌ Socket error:', err.message);
+    });
   });
 
   server.listen(TCP_CONFIG.PORT, TCP_CONFIG.HOST, () => {
-    console.log('📦🚀 Mock Backend TCP Server is running');
+    console.log(
+      `📦🚀 Mock Backend TCP Server is running on ${TCP_CONFIG.HOST}:${TCP_CONFIG.PORT}`,
+    );
+  });
+
+  server.on('error', (err) => {
+    console.error('📦❌ Server error:', err.message);
   });
 };

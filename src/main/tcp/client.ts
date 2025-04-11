@@ -145,7 +145,7 @@ class TcpClient {
     );
     const id = Date.now(); // уникальный идентификатор передачи
 
-    console.log('📩 Отправляем данные на TCP сервер:', payload);
+    console.log(`📩 Отправляем данные на TCP сервер: ${totalChunks} чанков`);
 
     for (let i = 0; i < totalChunks; i++) {
       const start = i * TCP_CONFIG.DATA_CHUNK_SIZE;

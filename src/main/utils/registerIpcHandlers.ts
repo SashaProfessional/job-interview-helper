@@ -37,10 +37,19 @@ export default function registerIpcHandlers(
     IPCChannels.RM_SEND_TCP_MESSAGE,
     (_event: IpcMainEvent, payload: any) => tcpClient.sendMessage(payload),
   );
+  
+  ipcMain.on(IPCChannels.RM_SEND_TCP_SCREENSHOT, async (_event: IpcMainEvent) => {
+    if (!mainWindow) return;
+  
+    // Подписываемся на событие "hide", чтобы дождаться полного скрытия
+    mainWindow.once('hide', async () => {
+      const screenshotBuffer = await captureFullScreen();
 
-  ipcMain.on(
-    IPCChannels.RM_SEND_TCP_SCREENSHOT,
-    async(_event: IpcMainEvent) =>
-      tcpClient.sendMessage(await captureFullScreen(), false),
-  );
+      tcpClient.sendMessage(screenshotBuffer, false);
+  
+      mainWindow.show();
+    });
+  
+    mainWindow.hide();
+  });
 }
