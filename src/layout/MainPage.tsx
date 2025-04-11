@@ -9,19 +9,20 @@ import InteractiveArea from '../components/InteractiveArea';
 const MainPage = () => {
   const navigate = useNavigate();
 
+  const onStartSessionClick = () => {
+    sendToIPC(IPCChannels.RM_SET_IGNORE_MOUSE_EVENTS, false);
+    navigate(ROUTES.LISTENING);
+  };
+
   return (
     <div className="page-wrapper">
       <InteractiveArea className="page main-page">
         <div className="header">
           <Button onClick={() => navigate(ROUTES.SETTINGS)}>Settings</Button>
-          <Button onClick={() => sendToIPC(IPCChannels.RM_CLOSE_APP)}>
-            X
-          </Button>
+          <Button onClick={() => sendToIPC(IPCChannels.RM_CLOSE_APP)}>X</Button>
         </div>
         <div className="footer">
-          <Button onClick={() => navigate(ROUTES.LISTENING)}>
-            Start Session
-          </Button>
+          <Button onClick={onStartSessionClick}>Start Session</Button>
         </div>
       </InteractiveArea>
     </div>

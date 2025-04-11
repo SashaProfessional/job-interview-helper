@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron';
 
 import { IPCChannels } from '../../shared/enums/ipcChannels';
 import { TCP_CONFIG } from './config';
+import { ChunkHeaderType } from '../../shared/types/ChunkHeaderType';
 
 class TcpClient {
   private client: net.Socket | null = null;
@@ -126,16 +127,47 @@ class TcpClient {
 
   public sendMessage(payload: any, stringify = true) {
     if (
-      this.client &&
-      !this.client.destroyed &&
-      this.client.readyState === 'open' &&
-      this.client.writable
+      !this.client ||
+      this.client.destroyed ||
+      this.client.readyState !== 'open' ||
+      !this.client.writable
     ) {
-      console.log('📩 Отправляем данные на TCP сервер:', payload);
-      this.client.write(stringify ? JSON.stringify(payload) + '\n' : payload);
-    } else {
       console.warn('⚠️ TCP клиент не подключен, добавляем сообщение в очередь');
       this.messageQueue.push(payload);
+      return;
+    }
+
+    const bufferPayload = stringify
+      ? Buffer.from(JSON.stringify(payload) + '\n', 'utf-8')
+      : payload;
+    const totalChunks = Math.ceil(
+      bufferPayload.length / TCP_CONFIG.DATA_CHUNK_SIZE,
+    );
+    const id = Date.now(); // уникальный идентификатор передачи
+
+    console.log('📩 Отправляем данные на TCP сервер:', payload);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * TCP_CONFIG.DATA_CHUNK_SIZE;
+      const end = Math.min(
+        start + TCP_CONFIG.DATA_CHUNK_SIZE,
+        bufferPayload.length,
+      );
+      const chunk = bufferPayload.slice(start, end);
+
+      const headerObj: ChunkHeaderType = {
+        id,
+        index: i,
+        total: totalChunks,
+        length: chunk.length,
+      };
+
+      const headerStr = JSON.stringify(headerObj).padEnd(64);
+      const header = Buffer.from(headerStr);
+
+      const packet = Buffer.concat([header, chunk]);
+
+      this.client.write(packet);
     }
   }
 

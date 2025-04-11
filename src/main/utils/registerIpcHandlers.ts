@@ -40,7 +40,7 @@ export default function registerIpcHandlers(
 
   ipcMain.on(
     IPCChannels.RM_SEND_TCP_SCREENSHOT,
-    async(_event: IpcMainEvent, payload: any) =>
+    async(_event: IpcMainEvent) =>
       tcpClient.sendMessage(await captureFullScreen(), false),
   );
 }
