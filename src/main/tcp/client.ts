@@ -1,9 +1,10 @@
 import net from 'net';
 import { BrowserWindow } from 'electron';
 
+import { TCPDataType } from '../../shared/enums/tcpDataType';
 import { IPCChannels } from '../../shared/enums/ipcChannels';
-import { TCP_CONFIG } from './config';
 import { ChunkHeaderType } from '../../shared/types/ChunkHeaderType';
+import { TCP_CONFIG } from './config';
 
 class TcpClient {
   private client: net.Socket | null = null;
@@ -125,7 +126,7 @@ class TcpClient {
     );
   }
 
-  public sendMessage(payload: any, stringify = true) {
+  public sendMessage(payload: any, type: TCPDataType, stringify = true) {
     if (
       !this.client ||
       this.client.destroyed ||
@@ -160,6 +161,7 @@ class TcpClient {
         index: i,
         total: totalChunks,
         length: chunk.length,
+        type,
       };
 
       const headerStr = JSON.stringify(headerObj).padEnd(64);
